@@ -13,6 +13,7 @@ var _ = godotenv.Load()
 var DbHost = os.Getenv("DBHOST")
 var Pool, err = pgxpool.New(context.Background(), DbHost)
 var TokenLifespan, _ = strconv.Atoi(os.Getenv("TOKENLIFESPAN"))
+var ApiSecret = "hello and welcome"
 
 func Configure() {
 	if err != nil {

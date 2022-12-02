@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"netfly/model"
+	"netfly/utils/token"
 )
 
 func Register(c *gin.Context) {
@@ -50,4 +51,19 @@ func Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func CurrentUser(c *gin.Context) {
+	userId, err := token.ExtractTokenID(c)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	u, err := model.GetUserByID(userId)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Abort()
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "success", "data": u})
 }

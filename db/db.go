@@ -70,20 +70,22 @@ func CheckUser(name string) error {
 	return fmt.Errorf("не найдено совпадений в имени")
 }
 
-func CheckUserID(name string) uint {
+func GetUserID(name string) uint {
 	CheckConnect()
-	rows, err1 := config.Pool.Query(context.Background(), "SELECT id, user_name FROM netfly_users WHERE user_name=$1", name)
-	if err1 != nil {
-		log.Fatal(err1)
+	var ID uint
+	err := config.Pool.QueryRow(context.Background(), "SELECT id FROM netfly_users WHERE user_name = $1", name).Scan(&ID)
+	if err != nil {
+		return 0
 	}
-	for rows.Next() {
-		values, err2 := rows.Values()
-		if err2 != nil {
-			return 0
-		}
-		if name == values[1].(string) {
-			return values[0].(uint)
-		}
+	return ID
+}
+
+func GetUserHashedPwd(name string) string {
+	CheckConnect()
+	var pwd string
+	err := config.Pool.QueryRow(context.Background(), "SELECT password FROM netfly_users WHERE user_name = $1", name).Scan(&pwd)
+	if err != nil {
+		return fmt.Sprintf("%s", err)
 	}
-	return 0
+	return pwd
 }

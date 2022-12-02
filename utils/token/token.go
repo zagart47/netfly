@@ -2,15 +2,13 @@ package token
 
 import (
 	"fmt"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"netfly/config"
 	"strconv"
 	"strings"
 	"time"
 )
-
-var ApiSecret = "helloandwelcome"
 
 func GenerateToken(userId uint) (string, error) {
 	claims := jwt.MapClaims{}
@@ -18,7 +16,7 @@ func GenerateToken(userId uint) (string, error) {
 	claims["user_id"] = userId
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(config.TokenLifespan)).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(ApiSecret))
+	return token.SignedString([]byte(config.ApiSecret))
 
 }
 
@@ -26,12 +24,12 @@ func TokenValid(c *gin.Context) error {
 	tokenString := ExtractToken(c)
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(ApiSecret), nil
+		return []byte(config.ApiSecret), nil
 	})
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -53,9 +51,9 @@ func ExtractTokenID(c *gin.Context) (uint, error) {
 	tokenString := ExtractToken(c)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return 0, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(ApiSecret), nil
+		return []byte(config.ApiSecret), nil
 	})
 	if err != nil {
 		return 0, nil
