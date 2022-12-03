@@ -60,6 +60,7 @@ func CurrentUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	u, err := model.GetUserByID(userId)
+	u.ID = int64(userId)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
