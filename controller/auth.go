@@ -26,16 +26,17 @@ func Register(c *gin.Context) {
 	}
 	err = u.SaveToDb()
 	if err != nil {
-		log.Fatalln(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "user registration was successful"})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "validated!"})
 }
 
 func Login(c *gin.Context) {
 	var input model.User
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

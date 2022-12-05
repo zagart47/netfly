@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"netfly/controller"
 	"netfly/middleware"
 
@@ -9,9 +10,15 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.SetTrustedProxies([]string{"127.0.0.1"})
+	router.LoadHTMLGlob("web/*.html")
+	router.Static("/assets", "./assets")
 
 	public := router.Group("/api")
+	public.GET("/register", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "registration.html", gin.H{
+			"message": "User registered",
+		})
+	})
 	public.POST("/register", controller.Register)
 	public.POST("/login", controller.Login)
 
@@ -19,5 +26,5 @@ func main() {
 	protected.Use(middleware.JwtAuthMiddleware())
 	protected.GET("/user", controller.CurrentUser)
 
-	router.Run(":8080")
+	router.Run("localhost:8080")
 }

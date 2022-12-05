@@ -7,6 +7,7 @@ import (
 	"log"
 	"netfly/config"
 	"os"
+	"time"
 )
 
 func ConnectDb() {
@@ -21,7 +22,10 @@ func ConnectDb() {
 
 func UserAdd(name string, password string) error {
 	CheckConnect()
-	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password) VALUES ($1, $2)", name, password)
+	if GetUserID(name) != 0 {
+		return fmt.Errorf("username already registered. choose another name")
+	}
+	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password, created_at) VALUES ($1, $2, $3)", name, password, AddTimeToDb())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		return err
@@ -45,7 +49,7 @@ func CheckTable() {
 		log.Fatal(err)
 	}
 	if tableStatus != true {
-		queryAdd := fmt.Sprint("CREATE TABLE netfly_users(id bigserial primary key, user_name text, password text); ")
+		queryAdd := fmt.Sprint("CREATE TABLE netfly_users(id bigserial primary key, user_name text, password text, created_at text, updated_at text); ")
 		queryOwner := fmt.Sprint("ALTER TABLE netfly_users OWNER TO postgres;")
 		config.Pool.QueryRow(context.Background(), queryAdd)
 		config.Pool.QueryRow(context.Background(), queryOwner)
@@ -54,13 +58,13 @@ func CheckTable() {
 
 func CheckUser(name string) error {
 	CheckConnect()
-	rows, err1 := config.Pool.Query(context.Background(), "SELECT user_name FROM netfly_users WHERE user_name=$1", name)
-	if err1 != nil {
+	rows, err := config.Pool.Query(context.Background(), "SELECT user_name FROM netfly_users WHERE user_name=$1", name)
+	if err != nil {
 		log.Fatal(fmt.Errorf("ошибка запроса в БД"))
 	}
 	for rows.Next() {
-		values, err2 := rows.Values()
-		if err2 != nil {
+		values, err := rows.Values()
+		if err != nil {
 			return fmt.Errorf("ошибка парсинга БД")
 		}
 		if name == values[0].(string) {
@@ -72,12 +76,12 @@ func CheckUser(name string) error {
 
 func GetUserID(name string) uint {
 	CheckConnect()
-	var ID uint
-	err := config.Pool.QueryRow(context.Background(), "SELECT id FROM netfly_users WHERE user_name = $1", name).Scan(&ID)
+	var id uint
+	err := config.Pool.QueryRow(context.Background(), "SELECT id FROM netfly_users WHERE user_name = $1", name).Scan(&id)
 	if err != nil {
 		return 0
 	}
-	return ID
+	return id
 }
 
 func GetUserHashedPwd(name string) string {
@@ -88,4 +92,9 @@ func GetUserHashedPwd(name string) string {
 		return fmt.Sprintf("%s", err)
 	}
 	return pwd
+}
+
+func AddTimeToDb() string {
+	dateTimeToDb := time.Now()
+	return fmt.Sprintf("%02d.%02d.%d %02d:%02d:%02d", dateTimeToDb.Day(), dateTimeToDb.Month(), dateTimeToDb.Year(), dateTimeToDb.Hour(), dateTimeToDb.Minute(), dateTimeToDb.Second())
 }
