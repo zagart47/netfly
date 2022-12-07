@@ -8,6 +8,7 @@ import (
 	"netfly/config"
 	"netfly/db"
 	"netfly/utils/token"
+	"os"
 	"strings"
 )
 
@@ -31,7 +32,7 @@ func (u *User) CryptPwd() error {
 }
 
 func (u *User) SaveToDb() error {
-	err := db.UserAdd(u.Username, u.Password)
+	err := UserAdd(u.Username, u.Password)
 	if err != nil {
 		return err
 	} else {
@@ -50,7 +51,7 @@ func LoginCheck(name string, password string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("user not found")
 	}
-	err = VerifyPassword(password, db.GetUserHashedPwd(name))
+	err = VerifyPassword(password, GetUserHashedPwd(name))
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 		return "", fmt.Errorf("wrong password")
 	}
@@ -77,4 +78,29 @@ func GetUserByID(uid uint) (User, error) {
 
 func (u *User) PwdCap() {
 	u.Password = ""
+}
+
+func UserAdd(name string, password string) error {
+	db.CheckConnect()
+	if db.GetUserID(name) != 0 {
+		return fmt.Errorf("username already registered. choose another name")
+	}
+	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password, created_at) VALUES ($1, $2, $3)", name, password, db.AddTimeToDb())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		return err
+		os.Exit(1)
+
+	}
+	return nil
+}
+
+func GetUserHashedPwd(name string) string {
+	db.CheckConnect()
+	var pwd string
+	err := config.Pool.QueryRow(context.Background(), "SELECT password FROM netfly_users WHERE user_name = $1", name).Scan(&pwd)
+	if err != nil {
+		return fmt.Sprintf("%s", err)
+	}
+	return pwd
 }

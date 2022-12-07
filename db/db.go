@@ -20,21 +20,6 @@ func ConnectDb() {
 	defer config.Pool.Close()
 }
 
-func UserAdd(name string, password string) error {
-	CheckConnect()
-	if GetUserID(name) != 0 {
-		return fmt.Errorf("username already registered. choose another name")
-	}
-	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password, created_at) VALUES ($1, $2, $3)", name, password, AddTimeToDb())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		return err
-		os.Exit(1)
-
-	}
-	return nil
-}
-
 func CheckConnect() {
 	if config.Pool.Ping(context.Background()) != nil {
 		ConnectDb()
@@ -82,16 +67,6 @@ func GetUserID(name string) uint {
 		return 0
 	}
 	return id
-}
-
-func GetUserHashedPwd(name string) string {
-	CheckConnect()
-	var pwd string
-	err := config.Pool.QueryRow(context.Background(), "SELECT password FROM netfly_users WHERE user_name = $1", name).Scan(&pwd)
-	if err != nil {
-		return fmt.Sprintf("%s", err)
-	}
-	return pwd
 }
 
 func AddTimeToDb() string {
