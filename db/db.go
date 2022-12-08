@@ -41,34 +41,6 @@ func CheckTable() {
 	}
 }
 
-func CheckUser(name string) error {
-	CheckConnect()
-	rows, err := config.Pool.Query(context.Background(), "SELECT user_name FROM netfly_users WHERE user_name=$1", name)
-	if err != nil {
-		log.Fatal(fmt.Errorf("ошибка запроса в БД"))
-	}
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return fmt.Errorf("ошибка парсинга БД")
-		}
-		if name == values[0].(string) {
-			return nil
-		}
-	}
-	return fmt.Errorf("не найдено совпадений в имени")
-}
-
-func GetUserID(name string) uint {
-	CheckConnect()
-	var id uint
-	err := config.Pool.QueryRow(context.Background(), "SELECT id FROM netfly_users WHERE user_name = $1", name).Scan(&id)
-	if err != nil {
-		return 0
-	}
-	return id
-}
-
 func AddTimeToDb() string {
 	dateTimeToDb := time.Now()
 	return fmt.Sprintf("%02d.%02d.%d %02d:%02d:%02d", dateTimeToDb.Day(), dateTimeToDb.Month(), dateTimeToDb.Year(), dateTimeToDb.Hour(), dateTimeToDb.Minute(), dateTimeToDb.Second())
