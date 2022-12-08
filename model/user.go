@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"html"
+	"log"
 	"netfly/config"
 	"netfly/db"
 	"netfly/utils/token"
@@ -32,7 +33,7 @@ func (u *User) CryptPwd() error {
 }
 
 func (u *User) SaveToDb() error {
-	err := UserAdd(u.Username, u.Password)
+	err := u.UserAdd()
 	if err != nil {
 		return err
 	} else {
@@ -40,22 +41,17 @@ func (u *User) SaveToDb() error {
 	}
 }
 
-func VerifyPassword(password, hashedPassword string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+func (u *User) VerifyPassword(inputPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(inputPassword))
 }
 
-func LoginCheck(name string, password string) (string, error) {
-	var err error
-
-	err = db.CheckUser(name)
-	if err != nil {
-		return "", fmt.Errorf("user not found")
-	}
-	err = VerifyPassword(password, GetUserHashedPwd(name))
+func (u *User) LoginCheck(inputPassword string) (string, error) {
+	u.GetUserFromDb()
+	err := u.VerifyPassword(inputPassword)
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		return "", fmt.Errorf("wrong password")
+		return "", err
 	}
-	token, err := token.GenerateToken(db.GetUserID(name))
+	token, err := token.GenerateToken(u.ID)
 	if err != nil {
 		return "", err
 	}
@@ -64,15 +60,14 @@ func LoginCheck(name string, password string) (string, error) {
 
 }
 
-func GetUserByID(uid uint) (User, error) {
-	var u User
+func (u *User) GetUserByID() error {
 	db.CheckConnect()
-	err := config.Pool.QueryRow(context.Background(), "SELECT id, user_name, created_at, updated_at FROM netfly_users WHERE id = $1", uid).Scan(&u.ID, &u.Username, &u.CreatedAt, &u.UpdatedAt)
+	err := config.Pool.QueryRow(context.Background(), "SELECT id, user_name, created_at, updated_at FROM netfly_users WHERE id = $1", u.ID).Scan(&u.ID, &u.Username, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		return u, fmt.Errorf("user not found")
+		return err
 	}
 	u.PwdCap()
-	return u, nil
+	return nil
 
 }
 
@@ -80,12 +75,12 @@ func (u *User) PwdCap() {
 	u.Password = ""
 }
 
-func UserAdd(name string, password string) error {
-	db.CheckConnect()
-	if db.GetUserID(name) != 0 {
+func (u *User) UserAdd() error {
+	u.GetUserFromDb()
+	if u.ID != 0 {
 		return fmt.Errorf("username already registered. choose another name")
 	}
-	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password, created_at) VALUES ($1, $2, $3)", name, password, db.AddTimeToDb())
+	_, err := config.Pool.Query(context.Background(), "INSERT INTO netfly_users (user_name, password, created_at, updated_at) VALUES ($1, $2, $3, $3)", u.Username, u.Password, db.AddTimeToDb())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		return err
@@ -95,12 +90,10 @@ func UserAdd(name string, password string) error {
 	return nil
 }
 
-func GetUserHashedPwd(name string) string {
+func (u *User) GetUserFromDb() {
 	db.CheckConnect()
-	var pwd string
-	err := config.Pool.QueryRow(context.Background(), "SELECT password FROM netfly_users WHERE user_name = $1", name).Scan(&pwd)
+	err := config.Pool.QueryRow(context.Background(), "SELECT id, user_name, password, created_at, updated_at FROM netfly_users WHERE user_name=$1", u.Username).Scan(&u.ID, &u.Username, &u.Password, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		return fmt.Sprintf("%s", err)
+		log.Print("user is not in the db")
 	}
-	return pwd
 }

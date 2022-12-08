@@ -22,7 +22,7 @@ func Register(c *gin.Context) {
 
 	err := u.CryptPwd()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	err = u.SaveToDb()
 	if err != nil {
@@ -34,18 +34,15 @@ func Register(c *gin.Context) {
 }
 
 func Login(c *gin.Context) {
+	var err error
 	var input model.User
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	u := model.User{}
-
-	u.Username = input.Username
-	u.Password = input.Password
-
-	token, err := model.LoginCheck(u.Username, u.Password)
+	var u model.User
+	token, err := u.LoginCheck(input.Password)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username or password incorrect"})
@@ -55,13 +52,17 @@ func Login(c *gin.Context) {
 }
 
 func CurrentUser(c *gin.Context) {
-	userId, err := token.ExtractTokenID(c)
+	u := model.User{}
+	var err error
+	u.ID, err = token.ExtractTokenID(c)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	u, err := model.GetUserByID(userId)
-	u.ID = int64(userId)
+	err = u.GetUserByID()
+	if err != nil {
+		return
+	}
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
