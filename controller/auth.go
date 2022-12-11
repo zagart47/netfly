@@ -42,7 +42,6 @@ func Login(c *gin.Context) {
 	}
 
 	var u model.User
-	u.Username = input.Username
 	token, err := u.LoginCheck(input.Password)
 
 	if err != nil {
