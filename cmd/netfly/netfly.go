@@ -25,7 +25,7 @@ func main() {
 
 	protected := router.Group("/api/admin")
 	protected.Use(middleware.JwtAuthMiddleware())
-	protected.GET("/user", controller.CurrentUser)
+	//	protected.GET("/user", controller.CurrentUser)
 
 	router.Run("localhost:8080")
 }

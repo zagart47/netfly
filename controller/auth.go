@@ -52,22 +52,12 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
-func CurrentUser(c *gin.Context) {
+func CurrentUser(c *gin.Context) int64 {
 	u := model.User{}
 	var err error
 	u.ID, err = token.ExtractTokenID(c)
-
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Fatal(err)
 	}
-	err = u.GetUserByID()
-	if err != nil {
-		return
-	}
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		c.Abort()
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "success", "data": u})
+	return u.ID
 }
