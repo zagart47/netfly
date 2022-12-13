@@ -11,8 +11,8 @@ import (
 type Message struct {
 	ID         int64  `json:"ID"`
 	FromUserID int64  `json:"fromUserID"`
-	ToUserID   int64  `json:"toUserID"`
-	Text       string `json:"text"`
+	ToUserID   int64  `json:"toUserID" binding:"required"`
+	Text       string `json:"text" binding:"required"`
 	SendTime   string `json:"sendTime"`
 }
 

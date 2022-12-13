@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"html"
-	"log"
 	"netfly/config"
 	"netfly/db"
 	"netfly/utils/token"
@@ -46,8 +45,11 @@ func (u *User) VerifyPassword(inputPassword string) error {
 }
 
 func (u *User) LoginCheck(inputPassword string) (string, error) {
-	u.GetUserFromDb()
-	err := u.VerifyPassword(inputPassword)
+	err := u.GetUserFromDb()
+	if err != nil {
+		return "", err
+	}
+	err = u.VerifyPassword(inputPassword)
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 		return "", err
 	}
@@ -90,10 +92,11 @@ func (u *User) UserAdd() error {
 	return nil
 }
 
-func (u *User) GetUserFromDb() {
+func (u *User) GetUserFromDb() error {
 	db.CheckConnect()
 	err := config.Pool.QueryRow(context.Background(), "SELECT id, user_name, password, created_at, updated_at FROM netfly_users WHERE user_name=$1", u.Username).Scan(&u.ID, &u.Username, &u.Password, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		log.Print("user is not in the db")
+		return fmt.Errorf("user not found in the db")
 	}
+	return nil
 }

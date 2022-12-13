@@ -21,11 +21,9 @@ func main() {
 	})
 	public.POST("/register", controller.Register)
 	public.POST("/login", controller.Login)
+	public.POST("/sendmessage", controller.SendMessage)
 	public.GET("/message", controller.GetMessage)
-
 	protected := router.Group("/api/admin")
 	protected.Use(middleware.JwtAuthMiddleware())
-	//	protected.GET("/user", controller.CurrentUser)
-
 	router.Run("localhost:8080")
 }
