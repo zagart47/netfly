@@ -23,6 +23,7 @@ func main() {
 	public.POST("/login", controller.Login)
 	public.POST("/sendmessage", controller.SendMessage)
 	public.GET("/message", controller.GetMessage)
+	public.GET("/", controller.Profile)
 	protected := router.Group("/api/admin")
 	protected.Use(middleware.JwtAuthMiddleware())
 	router.Run("localhost:8080")
