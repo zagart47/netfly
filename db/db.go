@@ -29,12 +29,21 @@ func CheckConnect() {
 
 func CheckTable() {
 	var tableStatus bool
-	err := config.Pool.QueryRow(context.Background(), "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'netfly_users');").Scan(&tableStatus)
+	err := config.Pool.QueryRow(context.Background(), `
+		SELECT EXISTS(
+		    SELECT FROM information_schema.tables 
+		           WHERE table_schema = 'public' 
+		             AND table_name = 'netfly_users');`).Scan(&tableStatus)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if tableStatus != true {
-		queryAdd := fmt.Sprint("CREATE TABLE netfly_users(id bigserial primary key, user_name text, password text, created_at text, updated_at text); ")
+		queryAdd := fmt.Sprint(`CREATE TABLE netfly_users(
+    		id bigserial primary key, 
+    		user_name text, 
+    		password text, 
+    		created_at text, 
+    		updated_at text); `)
 		queryOwner := fmt.Sprint("ALTER TABLE netfly_users OWNER TO postgres;")
 		config.Pool.QueryRow(context.Background(), queryAdd)
 		config.Pool.QueryRow(context.Background(), queryOwner)

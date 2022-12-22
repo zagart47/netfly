@@ -89,6 +89,7 @@ func (u *User) UserAdd() error {
 		os.Exit(1)
 
 	}
+	u.GetUserFromDb()
 	return nil
 }
 

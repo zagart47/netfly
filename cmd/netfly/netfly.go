@@ -22,7 +22,7 @@ func main() {
 	public.POST("/register", controller.Register)
 	public.POST("/login", controller.Login)
 	public.POST("/sendmessage", controller.SendMessage)
-	public.GET("/message", controller.GetMessage)
+	public.GET("/message", controller.ReadMessage)
 	public.GET("/", controller.Profile)
 	protected := router.Group("/api/admin")
 	protected.Use(middleware.JwtAuthMiddleware())

@@ -3,9 +3,9 @@ package model
 import (
 	"context"
 	"fmt"
-	"log"
 	"netfly/config"
 	"netfly/db"
+	"strconv"
 )
 
 type Message struct {
@@ -19,8 +19,7 @@ type Message struct {
 type MessageArray []Message
 
 func (ma *MessageArray) GetMessageFromDb(ToUserID int64) error {
-	CheckMessageTable()
-	messages, err := config.Pool.Query(context.Background(), "SELECT * FROM netfly_messages WHERE to_user_id = $1", ToUserID)
+	messages, err := config.Pool.Query(context.Background(), "SELECT * FROM messages.$1", strconv.FormatInt(ToUserID, 10))
 	if err != nil {
 		return err
 	}
@@ -44,19 +43,29 @@ func (ma *MessageArray) GetMessageFromDb(ToUserID int64) error {
 
 }
 
-func CheckMessageTable() {
+func (u *User) CreateUserMessageDb() {
 	if config.Pool.Ping(context.Background()) != nil {
 		db.ConnectDb()
 	}
-	var tableStatus bool
-	err := config.Pool.QueryRow(context.Background(), "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'netfly_messages');").Scan(&tableStatus)
+	/*_, err := config.Pool.Exec(context.Background(), "CREATE SCHEMA IF NOT EXISTS messages")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err.Error())
+	}*/
+	createTableQuery := fmt.Sprintf(`
+	CREATE TABLE IF NOT EXISTS messages.id%s (
+		id bigserial primary key,
+		from_user_id bigint,
+		FOREIGN KEY (from_user_id) REFERENCES netfly_users(id), 
+		to_user_id bigint, 
+		FOREIGN KEY (to_user_id) REFERENCES netfly_users(id), 
+		message_text text, send_time text);`, strconv.FormatInt(u.ID, 10))
+	_, err := config.Pool.Exec(context.Background(), createTableQuery)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	if tableStatus != true {
-		queryAdd := fmt.Sprint("CREATE TABLE netfly_messages(id bigserial primary key, from_user_id bigint, FOREIGN KEY (from_user_id) REFERENCES netfly_users(id), to_user_id bigint, FOREIGN KEY (to_user_id) REFERENCES netfly_users(id), message_text text, send_time text);")
-		queryOwner := fmt.Sprint("ALTER TABLE netfly_messages OWNER TO postgres;")
-		config.Pool.QueryRow(context.Background(), queryAdd)
-		config.Pool.QueryRow(context.Background(), queryOwner)
+	ownerQuery := fmt.Sprintf("ALTER TABLE messages.id%s OWNER TO postgres;", strconv.FormatInt(u.ID, 10))
+	_, err = config.Pool.Exec(context.Background(), ownerQuery)
+	if err != nil {
+		return
 	}
 }

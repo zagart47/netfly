@@ -25,6 +25,7 @@ func Register(c *gin.Context) {
 		log.Fatal(err)
 	}
 	err = u.SaveToDb()
+	u.CreateUserMessageDb()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": err.Error()})
 	} else {

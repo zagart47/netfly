@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-func GetMessage(c *gin.Context) {
+func ReadMessage(c *gin.Context) {
 	ma := model.MessageArray{}
 	err := ma.GetMessageFromDb(CurrentUser(c))
 	if err != nil {
@@ -23,8 +23,8 @@ func GetMessage(c *gin.Context) {
 
 func SendMessage(c *gin.Context) {
 	type Input struct {
-		Recipient string
-		Text      string
+		Recipient string `json:"recipient"`
+		Text      string `json:"text"`
 	}
 
 	var User model.User
@@ -51,7 +51,14 @@ func SendMessage(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"error": "you cannot send a message to yourself"})
 		c.Abort()
 	} else {
-		_, err = config.Pool.Query(context.Background(), "INSERT INTO netfly_messages (from_user_id, to_user_id, message_text, send_time) VALUES ($1, $2, $3, $4)", m.FromUserID, m.ToUserID, m.Text, db.AddTimeToDb())
+		insertQueryFrom := fmt.Sprintf("INSERT INTO messages.id%d (from_user_id, to_user_id, message_text, send_time) VALUES (%d, %d, '%s', '%s');", m.FromUserID, m.FromUserID, m.ToUserID, m.Text, db.AddTimeToDb())
+		_, err := config.Pool.Query(context.Background(), insertQueryFrom)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+			os.Exit(1)
+		}
+		insertQueryTo := fmt.Sprintf("INSERT INTO messages.id%d (from_user_id, to_user_id, message_text, send_time) VALUES (%d, %d, '%s', '%s');", m.ToUserID, m.FromUserID, m.ToUserID, m.Text, db.AddTimeToDb())
+		_, err = config.Pool.Query(context.Background(), insertQueryTo)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 			os.Exit(1)
