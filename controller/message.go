@@ -13,7 +13,7 @@ import (
 
 func ReadMessage(c *gin.Context) {
 	ma := model.MessageArray{}
-	err := ma.GetMessageFromDb(CurrentUser(c))
+	err := ma.ReadAllMessagesFromDb(CurrentUser(c))
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": err.Error()})
 	} else {

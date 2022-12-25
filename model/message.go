@@ -18,8 +18,9 @@ type Message struct {
 
 type MessageArray []Message
 
-func (ma *MessageArray) GetMessageFromDb(ToUserID int64) error {
-	messages, err := config.Pool.Query(context.Background(), "SELECT * FROM messages.$1", strconv.FormatInt(ToUserID, 10))
+func (ma *MessageArray) ReadAllMessagesFromDb(ToUserID int64) error {
+	queryUserMessageTable := fmt.Sprintf("SELECT * FROM messages.id%s", strconv.FormatInt(ToUserID, 10))
+	messages, err := config.Pool.Query(context.Background(), queryUserMessageTable)
 	if err != nil {
 		return err
 	}
