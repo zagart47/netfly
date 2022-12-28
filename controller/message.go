@@ -27,22 +27,19 @@ func SendMessage(c *gin.Context) {
 		Text      string `json:"text"`
 	}
 
-	var User model.User
-
-	type MessageToDb model.Message
 	input := Input{}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		c.Abort()
 	}
-	u := User
+	u := model.User{}
 	u.Username = input.Recipient
 	err := u.GetUserFromDb()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		c.Abort()
 	}
-	m := MessageToDb{
+	m := model.Message{
 		FromUserID: CurrentUser(c),
 		ToUserID:   u.ID,
 		Text:       input.Text,
